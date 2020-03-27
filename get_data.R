@@ -31,8 +31,6 @@ data <- map(ds, function(x){
   .[!is.na(.)] # drop NAs incase data isn't here for current DS
 
 
-data <- data[!is.na(data)]
-
 
 # format data since it changes over time
 df <- map_df(1:length(data), function(x){

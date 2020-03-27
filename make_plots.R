@@ -51,7 +51,13 @@ by_country %>%
     name = country
   )) %>% 
   hc_title(text="Confirmed COVID-19 Cases by Country") %>% 
-  hc_subtitle(text='By Days Since Country Reached 100 Cases')
+  hc_subtitle(text='By Days Since Country Reached 100 Cases') %>% 
+  hc_xAxis(crosshair=TRUE,
+           title= list(text="<i><b>Day Since 100 Cases")) %>% 
+  hc_yAxis(
+    title= list(text="<i><b> Confirmed Cases")) %>% 
+  hc_colors(colors=RColorBrewer::brewer.pal(length(top),'Set3'))
+
 
 
 
@@ -60,7 +66,12 @@ by_country %>%
 us <- df %>% 
   filter(country == 'US') %>% 
   group_by(province,ds) %>% 
-  summarise(confirmed=sum(confirmed, na.rm=TRUE))
+  summarise(
+    confirmed=sum(confirmed, na.rm=TRUE),
+    deaths=sum(deaths, na.rm=TRUE),
+    recovered=sum(recovered,na.rm=TRUE)
+    )
+
 
 # see if the states look right ...
  us %>% 
@@ -70,7 +81,6 @@ us <- df %>%
    print(n=Inf)
  
  
-
 top_states <- us %>% 
   filter(confirmed==max(confirmed)) %>% 
   arrange(-confirmed) %>% 
@@ -101,7 +111,7 @@ us %>%
     color = province
   )) +
   geom_line() +
-  hrbrthemes::theme_ipsum() +
+  hrbrthemes::theme_ipsum_tw() +
   theme(legend.position = 'bottom') +
   labs(
     x = "Day Since 100 Cases",
@@ -131,4 +141,34 @@ us %>%
   hc_yAxis(
            title= list(text="<i><b> Confirmed Cases"))
 
+  
+
+
+# incorporate more vars
+df %>% 
+  filter(country == 'Italy') %>% 
+  group_by(country,ds) %>% 
+  summarise(
+    confirmed=sum(confirmed, na.rm=TRUE),
+    deaths=sum(deaths, na.rm=TRUE),
+    recovered=sum(recovered,na.rm=TRUE)
+  ) %>% 
+  inner_join(tipping_points) %>% 
+  filter( ds >= first_ds) %>% 
+  select(
+    ds,  country, confirmed, deaths, recovered
+  ) %>% 
+  arrange(country,ds) %>%
+  group_by(country) %>% 
+  mutate(rn = row_number()) %>% 
+  select(-ds) %>% 
+  gather(
+    metric, value, -rn, -country
+  ) %>% 
+  arrange(metric,rn) %>% 
+  hchart('line',
+         hcaes(x = rn,
+               y = value,
+               fill = metric,
+               group = metric))
   
