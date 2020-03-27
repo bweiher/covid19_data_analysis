@@ -145,30 +145,56 @@ us %>%
 
 
 # incorporate more vars
-df %>% 
-  filter(country == 'Italy') %>% 
-  group_by(country,ds) %>% 
-  summarise(
-    confirmed=sum(confirmed, na.rm=TRUE),
-    deaths=sum(deaths, na.rm=TRUE),
-    recovered=sum(recovered,na.rm=TRUE)
-  ) %>% 
-  inner_join(tipping_points) %>% 
-  filter( ds >= first_ds) %>% 
-  select(
-    ds,  country, confirmed, deaths, recovered
-  ) %>% 
-  arrange(country,ds) %>%
-  group_by(country) %>% 
-  mutate(rn = row_number()) %>% 
-  select(-ds) %>% 
-  gather(
-    metric, value, -rn, -country
-  ) %>% 
-  arrange(metric,rn) %>% 
-  hchart('line',
-         hcaes(x = rn,
-               y = value,
-               fill = metric,
-               group = metric))
+
+plots <- map(top, function(x){
+  df %>% 
+    filter(country == x) %>% 
+    group_by(country,ds) %>% 
+    summarise(
+      confirmed=sum(confirmed, na.rm=TRUE),
+      deaths=sum(deaths, na.rm=TRUE),
+      recovered=sum(recovered,na.rm=TRUE)
+    ) %>% 
+    inner_join(tipping_points) %>% 
+    filter( ds >= first_ds) %>% 
+    select(
+      ds,  country, confirmed, deaths, recovered
+    ) %>% 
+    arrange(country,ds) %>%
+    group_by(country) %>% 
+    mutate(rn = row_number()) %>% 
+    select(-ds) %>% 
+    gather(
+      metric, value, -rn, -country
+    ) %>% 
+    arrange(metric,rn) %>% 
+    hchart('area',
+           hcaes(x = rn,
+                 y = value,
+                 fill = metric,
+                 group = metric),
+           stacking='stacked') %>% 
+    hc_title(text=glue("COVID-19 by Country {x}")) %>% 
+    hc_subtitle(text = glue('By Days Since State Reached 100 Cases')) %>% 
+    
+    hc_xAxis(crosshair=TRUE,
+             title= list(text="<i><b>Day Since 100 Cases")) %>% 
+    hc_yAxis(
+      title= list(text="<i><b> Number"))
   
+  
+  
+  
+})
+
+
+# TODO linked ? 
+library(htmltools)
+tagList(
+  tags$head(tags$style(HTML("{fontFamily: Arial Narrow;}"))),
+   h1("Covid Stats by Country"),
+   hw_grid(plots) 
+) %>% 
+  browsable()
+
+
